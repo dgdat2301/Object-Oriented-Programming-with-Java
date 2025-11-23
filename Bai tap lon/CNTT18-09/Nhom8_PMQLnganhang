@@ -1,0 +1,888 @@
+//Main
+package main;
+
+import model.*;
+import service.*;
+import utils.FileManager;
+import utils.VNCharacterUtils;
+import java.util.List;
+import java.util.Scanner;
+
+public class Main {
+    private static AccountService accountService = new AccountService();
+    private static CustomerService customerService = new CustomerService();
+    private static Scanner scanner;
+    
+    public static void main(String[] args) {
+        // THIẾT LẬP UTF-8 CHO TIẾNG VIỆT
+        VNCharacterUtils.setupUTF8();
+        
+        scanner = new Scanner(System.in, "UTF-8");
+        
+        VNCharacterUtils.print("🏦 PHẦN MỀM QUẢN LÝ NGÂN HÀNG - NHÓM 8 🏦");
+        VNCharacterUtils.print("==========================================");
+        
+        taiDuLieu();
+        hienThiMenuChinh();
+    }
+    
+    private static void hienThiMenuChinh() {
+        while (true) {
+            VNCharacterUtils.print("\n🎯 MENU CHÍNH - NHÓM 8");
+            VNCharacterUtils.print("1. Quản lý tài khoản");
+            VNCharacterUtils.print("2. Quản lý khách hàng");
+            VNCharacterUtils.print("3. Giao dịch");
+            VNCharacterUtils.print("4. Tìm kiếm & Thống kê");
+            VNCharacterUtils.print("5. Lưu dữ liệu");
+            VNCharacterUtils.print("0. Thoát");
+            VNCharacterUtils.printNoNewLine("Chọn chức năng: ");
+            
+            int choice = nhapSoNguyen();
+            switch (choice) {
+                case 1: quanLyTaiKhoan(); break;
+                case 2: quanLyKhachHang(); break;
+                case 3: giaoDich(); break;
+                case 4: timKiemThongKe(); break;
+                case 5: luuDuLieu(); break;
+                case 0: 
+                    luuDuLieu();
+                    VNCharacterUtils.printSuccess("Cảm ơn đã sử dụng phần mềm Nhóm 3!");
+                    return;
+                default: 
+                    VNCharacterUtils.printError("Lựa chọn không hợp lệ!");
+            }
+        }
+    }
+    
+    private static void quanLyTaiKhoan() {
+        while (true) {
+            VNCharacterUtils.print("\n💰 QUẢN LÝ TÀI KHOẢN - NHÓM 3");
+            VNCharacterUtils.print("1. Thêm tài khoản");
+            VNCharacterUtils.print("2. Hiển thị tất cả tài khoản");
+            VNCharacterUtils.print("3. Sửa thông tin tài khoản");
+            VNCharacterUtils.print("4. Xóa tài khoản");
+            VNCharacterUtils.print("5. Xem lịch sử giao dịch");
+            VNCharacterUtils.print("6. Quay lại");
+            VNCharacterUtils.printNoNewLine("Chọn: ");
+            
+            int choice = nhapSoNguyen();
+            switch (choice) {
+                case 1: themTaiKhoan(); break;
+                case 2: accountService.hienThiTatCaTaiKhoan(); break;
+                case 3: suaTaiKhoan(); break;
+                case 4: 
+                    VNCharacterUtils.printNoNewLine("Nhập mã TK cần xóa: ");
+                    String maTK = scanner.nextLine();
+                    accountService.xoaTaiKhoan(maTK);
+                    break;
+                case 5:
+                    VNCharacterUtils.printNoNewLine("Nhập mã TK để xem lịch sử: ");
+                    String maTKLS = scanner.nextLine();
+                    accountService.getTransactionService().hienThiLichSuGiaoDich(maTKLS);
+                    break;
+                case 6: return;
+                default: VNCharacterUtils.printError("Lựa chọn không hợp lệ!");
+            }
+        }
+    }
+    
+    private static void themTaiKhoan() {
+        VNCharacterUtils.print("\n➕ THÊM TÀI KHOẢN MỚI - NHÓM 3");
+        VNCharacterUtils.printNoNewLine("Nhập mã TK: ");
+        String maTK = scanner.nextLine();
+        VNCharacterUtils.printNoNewLine("Nhập tên chủ TK: ");
+        String chuTK = scanner.nextLine();
+        double soDu = nhapSoThuc("Nhập số dư ban đầu: ");
+        
+        VNCharacterUtils.print("Chọn loại tài khoản:");
+        VNCharacterUtils.print("1. Tiết kiệm");
+        VNCharacterUtils.print("2. Thanh toán");
+        VNCharacterUtils.printNoNewLine("Chọn: ");
+        
+        int loai = nhapSoNguyen();
+        Account account;
+        
+        if (loai == 1) {
+            account = new SavingsAccount(maTK, chuTK, soDu);
+        } else if (loai == 2) {
+            account = new CheckingAccount(maTK, chuTK, soDu);
+        } else {
+            VNCharacterUtils.printWarning("Loại không hợp lệ, mặc định là Thanh toán");
+            account = new CheckingAccount(maTK, chuTK, soDu);
+        }
+        
+        accountService.themTaiKhoan(account);
+    }
+    
+    private static void suaTaiKhoan() {
+        VNCharacterUtils.print("\n✏️ SỬA THÔNG TIN TÀI KHOẢN - NHÓM 3");
+        VNCharacterUtils.printNoNewLine("Nhập mã TK cần sửa: ");
+        String maTKSua = scanner.nextLine();
+        
+        Account acc = accountService.timTheoMaTK(maTKSua);
+        if (acc == null) {
+            VNCharacterUtils.printError("Không tìm thấy tài khoản!");
+            return;
+        }
+        
+        VNCharacterUtils.print("Thông tin hiện tại: " + acc);
+        double soDuMoi = nhapSoThuc("Nhập số dư mới: ");
+        
+        accountService.suaTaiKhoan(maTKSua, acc.getChuTK(), soDuMoi);
+    }
+    
+    private static void quanLyKhachHang() {
+        while (true) {
+            VNCharacterUtils.print("\n👥 QUẢN LÝ KHÁCH HÀNG - NHÓM 3");
+            VNCharacterUtils.print("1. Thêm khách hàng");
+            VNCharacterUtils.print("2. Hiển thị tất cả khách hàng");
+            VNCharacterUtils.print("3. Sửa thông tin khách hàng");
+            VNCharacterUtils.print("4. Xóa khách hàng");
+            VNCharacterUtils.print("5. Quay lại");
+            VNCharacterUtils.printNoNewLine("Chọn: ");
+            
+            int choice = nhapSoNguyen();
+            switch (choice) {
+                case 1: themKhachHang(); break;
+                case 2: customerService.hienThiTatCaKhachHang(); break;
+                case 3: suaKhachHang(); break;
+                case 4: 
+                    VNCharacterUtils.printNoNewLine("Nhập CMND khách hàng cần xóa: ");
+                    String cmnd = scanner.nextLine();
+                    customerService.xoaKhachHang(cmnd);
+                    break;
+                case 5: return;
+                default: VNCharacterUtils.printError("Lựa chọn không hợp lệ!");
+            }
+        }
+    }
+    
+    private static void themKhachHang() {
+        VNCharacterUtils.print("\n➕ THÊM KHÁCH HÀNG MỚI - NHÓM 3");
+        VNCharacterUtils.printNoNewLine("Nhập họ tên: ");
+        String hoTen = scanner.nextLine();
+        VNCharacterUtils.printNoNewLine("Nhập CMND: ");
+        String cmnd = scanner.nextLine();
+        VNCharacterUtils.printNoNewLine("Nhập SĐT: ");
+        String sdt = scanner.nextLine();
+        VNCharacterUtils.printNoNewLine("Nhập Email: ");
+        String email = scanner.nextLine();
+        
+        Customer customer = new Customer(hoTen, cmnd, sdt, email);
+        customerService.themKhachHang(customer);
+    }
+    
+    private static void suaKhachHang() {
+        VNCharacterUtils.printNoNewLine("Nhập CMND khách hàng cần sửa: ");
+        String cmnd = scanner.nextLine();
+        VNCharacterUtils.printNoNewLine("Nhập SĐT mới: ");
+        String sdtMoi = scanner.nextLine();
+        VNCharacterUtils.printNoNewLine("Nhập Email mới: ");
+        String emailMoi = scanner.nextLine();
+        
+        customerService.suaThongTinKhachHang(cmnd, sdtMoi, emailMoi);
+    }
+    
+    private static void giaoDich() {
+        while (true) {
+            VNCharacterUtils.print("\n💳 GIAO DỊCH - NHÓM 3");
+            VNCharacterUtils.print("1. Nạp tiền");
+            VNCharacterUtils.print("2. Rút tiền");
+            VNCharacterUtils.print("3. Chuyển tiền");
+            VNCharacterUtils.print("4. Quay lại");
+            VNCharacterUtils.printNoNewLine("Chọn: ");
+            
+            int choice = nhapSoNguyen();
+            switch (choice) {
+                case 1: 
+                    VNCharacterUtils.printNoNewLine("Nhập mã TK: ");
+                    String maTKNap = scanner.nextLine();
+                    double soTienNap = nhapSoThuc("Nhập số tiền nạp: ");
+                    accountService.napTien(maTKNap, soTienNap);
+                    break;
+                case 2:
+                    VNCharacterUtils.printNoNewLine("Nhập mã TK: ");
+                    String maTKRut = scanner.nextLine();
+                    double soTienRut = nhapSoThuc("Nhập số tiền rút: ");
+                    accountService.rutTien(maTKRut, soTienRut);
+                    break;
+                case 3:
+                    VNCharacterUtils.printNoNewLine("Nhập mã TK nguồn: ");
+                    String maTKNguon = scanner.nextLine();
+                    VNCharacterUtils.printNoNewLine("Nhập mã TK đích: ");
+                    String maTKDich = scanner.nextLine();
+                    double soTienChuyen = nhapSoThuc("Nhập số tiền chuyển: ");
+                    accountService.chuyenTien(maTKNguon, maTKDich, soTienChuyen);
+                    break;
+                case 4: return;
+                default: VNCharacterUtils.printError("Lựa chọn không hợp lệ!");
+            }
+        }
+    }
+    
+    private static void timKiemThongKe() {
+        while (true) {
+            VNCharacterUtils.print("\n🔍 TÌM KIẾM & THỐNG KÊ - NHÓM 3");
+            VNCharacterUtils.print("1. Tìm tài khoản theo mã");
+            VNCharacterUtils.print("2. Tìm tài khoản theo tên chủ TK");
+            VNCharacterUtils.print("3. Tìm khách hàng theo tên");
+            VNCharacterUtils.print("4. Thống kê số dư trung bình");
+            VNCharacterUtils.print("5. Thống kê khách hàng VIP");
+            VNCharacterUtils.print("6. Xem tổng quan hệ thống");
+            VNCharacterUtils.print("7. Quay lại");
+            VNCharacterUtils.printNoNewLine("Chọn: ");
+            
+            int choice = nhapSoNguyen();
+            switch (choice) {
+                case 1:
+                    VNCharacterUtils.printNoNewLine("Nhập mã TK cần tìm: ");
+                    String maTK = scanner.nextLine();
+                    Account acc = accountService.timTheoMaTK(maTK);
+                    if (acc != null) {
+                        VNCharacterUtils.printSuccess("Tìm thấy: " + acc);
+                    } else {
+                        VNCharacterUtils.printError("Không tìm thấy tài khoản!");
+                    }
+                    break;
+                case 2:
+                    VNCharacterUtils.printNoNewLine("Nhập tên chủ TK cần tìm: ");
+                    String tenChuTK = scanner.nextLine();
+                    List<Account> accounts = accountService.timTheoTenChuTK(tenChuTK);
+                    if (!accounts.isEmpty()) {
+                        VNCharacterUtils.print("\n📋 KẾT QUẢ TÌM KIẾM:");
+                        accounts.forEach(System.out::println);
+                    } else {
+                        VNCharacterUtils.printError("Không tìm thấy tài khoản!");
+                    }
+                    break;
+                case 3:
+                    VNCharacterUtils.printNoNewLine("Nhập tên khách hàng cần tìm: ");
+                    String tenKH = scanner.nextLine();
+                    List<Customer> customers = customerService.timTheoTen(tenKH);
+                    if (!customers.isEmpty()) {
+                        VNCharacterUtils.print("\n📋 KẾT QUẢ TÌM KIẾM:");
+                        customers.forEach(System.out::println);
+                    } else {
+                        VNCharacterUtils.printError("Không tìm thấy khách hàng!");
+                    }
+                    break;
+                case 4:
+                    double soDuTB = accountService.tinhSoDuTrungBinh();
+                    VNCharacterUtils.printInfo(String.format("Số dư trung bình: %,.2f VND", soDuTB));
+                    break;
+                case 5:
+                    long soVIP = accountService.demKhachHangVIP(100000000);
+                    VNCharacterUtils.printInfo("Số khách hàng VIP (số dư ≥ 100 triệu): " + soVIP);
+                    break;
+                case 6:
+                    VNCharacterUtils.print("\n📊 TỔNG QUAN HỆ THỐNG:");
+                    VNCharacterUtils.print("📈 Số tài khoản: " + accountService.getSoLuongTaiKhoan());
+                    VNCharacterUtils.print("👥 Số khách hàng: " + customerService.getAllCustomers().size());
+                    VNCharacterUtils.printInfo(String.format("💰 Số dư trung bình: %,.2f VND", accountService.tinhSoDuTrungBinh()));
+                    VNCharacterUtils.print("⭐ Khách hàng VIP: " + accountService.demKhachHangVIP(100000000));
+                    break;
+                case 7: return;
+                default: VNCharacterUtils.printError("Lựa chọn không hợp lệ!");
+            }
+        }
+    }
+    
+    private static void taiDuLieu() {
+        VNCharacterUtils.printInfo("Đang tải dữ liệu...");
+        
+        // Tải tài khoản
+        List<Account> accounts = FileManager.docDuLieu("accounts.dat");
+        accounts.forEach(accountService::themTaiKhoan);
+        
+        // Tải khách hàng
+        List<Customer> customers = FileManager.docDuLieu("customers.dat");
+        customers.forEach(customerService::themKhachHang);
+    }
+    
+    private static void luuDuLieu() {
+        VNCharacterUtils.printInfo("Đang lưu dữ liệu...");
+        
+        // Lưu tài khoản
+        FileManager.luuDuLieu(accountService.getAllAccounts(), "accounts.dat");
+        
+        // Lưu khách hàng
+        FileManager.luuDuLieu(customerService.getAllCustomers(), "customers.dat");
+        
+        VNCharacterUtils.printSuccess("Đã lưu tất cả dữ liệu!");
+    }
+    
+    // Utility methods
+    private static int nhapSoNguyen() {
+        try {
+            return Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+    
+    private static double nhapSoThuc(String prompt) {
+        VNCharacterUtils.printNoNewLine(prompt);
+        try {
+            return Double.parseDouble(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+}
+
+// Account
+
+package model;
+
+import java.io.Serializable;
+
+public abstract class Account implements Serializable {         // TỪ KHÓA 'abstract'
+    protected String maTK;
+    protected String chuTK;
+    protected double soDu;
+    
+    public Account(String maTK, String chuTK, double soDu) {
+        this.maTK = maTK;
+        this.chuTK = chuTK;
+        this.soDu = soDu;
+    }
+    
+    // Abstract method - Đa hình
+    public abstract String getLoaiTK();
+    public abstract double tinhLaiSuat();
+    
+    // Getter/Setter
+    public String getMaTK() { return maTK; }
+    public String getChuTK() { return chuTK; }
+    public double getSoDu() { return soDu; }
+    public void setSoDu(double soDu) { this.soDu = soDu; }
+    // Đa hình qua OVERRIDE
+    @Override       // Khai báo trong lớp cha
+    public String toString() {
+        return String.format("Mã TK: %s, Chủ TK: %s, Loại: %s, Số dư: %.2f", 
+            maTK, chuTK, getLoaiTK(), soDu);
+    }
+}
+
+// CheckingAccount
+
+package model;
+
+public class CheckingAccount extends Account {
+
+    public CheckingAccount(String maTK, String chuTK, double soDu) {
+        super(maTK, chuTK, soDu);
+    }
+
+    @Override
+    public String getLoaiTK() {         // Triển khai KHÁC trong lớp con
+        return "THANH TOÁN";
+    }
+
+    @Override
+    public double tinhLaiSuat() {
+        return 0;
+    }
+}
+
+// Customer
+
+package model;
+
+import java.io.Serializable;
+
+public class Customer implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private String hoTen;
+    private String cmnd;
+    private String sdt;
+    private String email;
+    
+    public Customer(String hoTen, String cmnd, String sdt, String email) {
+        this.hoTen = hoTen;
+        this.cmnd = cmnd;
+        this.sdt = sdt;
+        this.email = email;
+    }
+    
+    public String getHoTen() { return hoTen; }
+    public String getCmnd() { return cmnd; }
+    public String getSdt() { return sdt; }
+    public String getEmail() { return email; }
+    
+    public void setSdt(String sdt) { this.sdt = sdt; }
+    public void setEmail(String email) { this.email = email; }
+    
+    @Override
+    public String toString() {
+        return String.format("Họ tên: %s | CMND: %s | SDT: %s | Email: %s", 
+            hoTen, cmnd, sdt, email);
+    }
+}
+
+// SavingsAccount
+
+package model;
+
+public class SavingsAccount extends Account {
+    private static final double LAI_SUAT = 0.05;
+    
+    public SavingsAccount(String maTK, String chuTK, double soDu) {
+        super(maTK, chuTK, soDu);
+    }
+    
+    @Override
+    public String getLoaiTK() {         // Triển khai trong lớp con
+        return "TIẾT KIỆM";
+    }
+    
+    @Override
+    public double tinhLaiSuat() {
+        return soDu * LAI_SUAT;
+    }
+}
+
+// Transaction
+
+package model;
+
+import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class Transaction implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private String maGD;
+    private String maTK;
+    private String loaiGD;
+    private double soTien;
+    private Date thoiGian;
+    private String moTa;
+    
+    public Transaction(String maGD, String maTK, String loaiGD, double soTien, String moTa) {
+        this.maGD = maGD;
+        this.maTK = maTK;
+        this.loaiGD = loaiGD;
+        this.soTien = soTien;
+        this.thoiGian = new Date();
+        this.moTa = moTa;
+    }
+    
+    public String getMaGD() { return maGD; }
+    public String getMaTK() { return maTK; }
+    public String getLoaiGD() { return loaiGD; }
+    public double getSoTien() { return soTien; }
+    public Date getThoiGian() { return thoiGian; }
+    
+    @Override
+    public String toString() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        return String.format("GD%s | TK: %s | %s | %,.2f VND | %s | %s",
+            maGD, maTK, loaiGD, soTien, sdf.format(thoiGian), moTa);
+    }
+}
+
+// AccountService
+
+//Collection framework (ArrayList, HashMap)
+package service;
+
+import model.Account;
+import model.SavingsAccount;
+import model.CheckingAccount;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class AccountService {
+    private BankService<Account> accountBankService;
+    private Map<String, Account> accountMap;
+    private TransactionService transactionService;
+    
+    public AccountService() {
+        this.accountBankService = new BankService<>();
+        // HashMap - tra cứu nhanh theo key
+        this.accountMap = new HashMap<>();
+        this.transactionService = new TransactionService();
+    }
+    
+    // THÊM TÀI KHOẢN
+    public void themTaiKhoan(Account account) {
+        accountBankService.add(account);
+        accountMap.put(account.getMaTK(), account);
+        System.out.println("✅ Đã thêm tài khoản: " + account.getMaTK());
+    }
+    
+    // SỬA THÔNG TIN TÀI KHOẢN
+    public boolean suaTaiKhoan(String maTK, String tenMoi, double soDuMoi) {
+        Account acc = timTheoMaTK(maTK);
+        if (acc != null) {
+            // Trong thực tế cần thêm setter cho tên chủ TK trong class Account
+            // acc.setChuTK(tenMoi); // Cần thêm setter này trong class Account
+            acc.setSoDu(soDuMoi);
+            System.out.println("✅ Đã cập nhật tài khoản: " + maTK);
+            return true;
+        }
+        System.out.println("❌ Không tìm thấy tài khoản để sửa!");
+        return false;
+    }
+    
+    // XÓA TÀI KHOẢN
+    public void xoaTaiKhoan(String maTK) {
+        Account acc = timTheoMaTK(maTK);
+        if (acc != null) {
+            accountBankService.remove(acc);
+            accountMap.remove(maTK);
+            System.out.println("✅ Đã xóa tài khoản: " + maTK);
+        } else {
+            System.out.println("❌ Không tìm thấy tài khoản!");
+        }
+    }
+    
+    // TÌM KIẾM
+    public Account timTheoMaTK(String maTK) {
+        return accountMap.get(maTK);
+    }
+    
+    public List<Account> timTheoTenChuTK(String tenChuTK) {
+        return accountBankService.search(acc -> 
+            acc.getChuTK().toLowerCase().contains(tenChuTK.toLowerCase()));
+    }
+    
+    // GIAO DỊCH CÓ GHI LỊCH SỬ
+    public boolean napTien(String maTK, double soTien) {
+        Account acc = timTheoMaTK(maTK);
+        if (acc != null && soTien > 0) {
+            acc.setSoDu(acc.getSoDu() + soTien);
+            transactionService.themGiaoDich(maTK, "NẠP TIỀN", soTien, 
+                "Nạp tiền vào tài khoản");
+            System.out.printf("✅ Đã nạp %,.2f VND vào tài khoản %s\n", soTien, maTK);
+            return true;
+        }
+        System.out.println("❌ Nạp tiền thất bại!");
+        return false;
+    }
+    
+    public boolean rutTien(String maTK, double soTien) {
+        Account acc = timTheoMaTK(maTK);
+        if (acc != null && soTien > 0 && acc.getSoDu() >= soTien) {
+            acc.setSoDu(acc.getSoDu() - soTien);
+            transactionService.themGiaoDich(maTK, "RÚT TIỀN", soTien, 
+                "Rút tiền từ tài khoản");
+            System.out.printf("✅ Đã rút %,.2f VND từ tài khoản %s\n", soTien, maTK);
+            return true;
+        }
+        System.out.println("❌ Rút tiền thất bại! Số dư không đủ.");
+        return false;
+    }
+    
+    public boolean chuyenTien(String maTKNguon, String maTKDich, double soTien) {
+        Account accNguon = timTheoMaTK(maTKNguon);
+        Account accDich = timTheoMaTK(maTKDich);
+        
+        if (accNguon != null && accDich != null && soTien > 0 && accNguon.getSoDu() >= soTien) {
+            accNguon.setSoDu(accNguon.getSoDu() - soTien);
+            accDich.setSoDu(accDich.getSoDu() + soTien);
+            
+            // Ghi lịch sử cho cả 2 tài khoản
+            transactionService.themGiaoDich(maTKNguon, "CHUYỂN TIỀN", -soTien, 
+                "Chuyển tiền đến " + maTKDich);
+            transactionService.themGiaoDich(maTKDich, "CHUYỂN TIỀN", soTien, 
+                "Nhận tiền từ " + maTKNguon);
+                
+            System.out.printf("✅ Đã chuyển %,.2f VND từ %s sang %s\n", soTien, maTKNguon, maTKDich);
+            return true;
+        }
+        System.out.println("❌ Chuyển tiền thất bại!");
+        return false;
+    }
+    
+    // THỐNG KÊ
+    public double tinhSoDuTrungBinh() {
+        if (accountBankService.isEmpty()) return 0;
+        return accountBankService.getAll().stream()
+                .mapToDouble(Account::getSoDu)
+                .average()
+                .orElse(0);
+    }
+    
+    public long demKhachHangVIP(double nguongVIP) {
+        return accountBankService.getAll().stream()
+                .filter(acc -> acc.getSoDu() >= nguongVIP)
+                .count();
+    }
+    
+    // HIỂN THỊ
+    public List<Account> getAllAccounts() {
+        return accountBankService.getAll();
+    }
+    
+    public void hienThiTatCaTaiKhoan() {
+        List<Account> accounts = getAllAccounts();
+        if (accounts.isEmpty()) {
+            System.out.println("📭 Danh sách tài khoản trống!");
+        } else {
+            System.out.println("\n📋 DANH SÁCH TÀI KHOẢN (" + accounts.size() + " tài khoản)");
+            accounts.forEach(System.out::println);
+        }
+    }
+    
+    // GETTER CHO TRANSACTION SERVICE
+    public TransactionService getTransactionService() {
+        return transactionService;
+    }
+    
+    public int getSoLuongTaiKhoan() {
+        return accountBankService.size();
+    }
+}
+
+// BankService
+
+//Collection framework (ArrayList, HashMap), Generic class
+package service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+public class BankService<T> {           // <T> - Generic type parameter
+    protected List<T> items;            // T có thể là Account, Customer, Transaction
+    
+    public BankService() {
+        // ArrayList cho danh sách đối tượng
+        this.items = new ArrayList<>();
+    }
+    
+    public void add(T item) {           // Tham số kiểu T
+        items.add(item);
+    }
+    
+    public boolean remove(T item) {
+        return items.remove(item);
+    }
+    
+    public List<T> getAll() {           // Trả về kiểu List<T>
+        return new ArrayList<>(items);
+    }
+    
+    public T find(Predicate<T> predicate) {
+        return items.stream().filter(predicate).findFirst().orElse(null);
+    }
+    
+    public List<T> search(Predicate<T> predicate) {
+        return items.stream().filter(predicate).collect(Collectors.toList());
+    }
+    
+    public int size() {
+        return items.size();
+    }
+    
+    public void clear() {
+        items.clear();
+    }
+    
+    public boolean isEmpty() {
+        return items.isEmpty();
+    }
+}
+
+// CustomerService
+
+package service;
+
+import model.Customer;
+import java.util.List;
+
+public class CustomerService {
+    private BankService<Customer> customerBankService;
+    
+    public CustomerService() {
+        this.customerBankService = new BankService<>();
+    }
+    
+    public void themKhachHang(Customer customer) {
+        customerBankService.add(customer);
+        System.out.println("✅ Đã thêm khách hàng: " + customer.getHoTen());
+    }
+    
+    public Customer timTheoCMND(String cmnd) {
+        return customerBankService.find(c -> c.getCmnd().equals(cmnd));
+    }
+    
+    public List<Customer> timTheoTen(String ten) {
+        return customerBankService.search(c -> 
+            c.getHoTen().toLowerCase().contains(ten.toLowerCase()));
+    }
+    
+    public void suaThongTinKhachHang(String cmnd, String sdtMoi, String emailMoi) {
+        Customer customer = timTheoCMND(cmnd);
+        if (customer != null) {
+            customer.setSdt(sdtMoi);
+            customer.setEmail(emailMoi);
+            System.out.println("✅ Đã cập nhật thông tin khách hàng: " + customer.getHoTen());
+        } else {
+            System.out.println("❌ Không tìm thấy khách hàng!");
+        }
+    }
+    
+    public void xoaKhachHang(String cmnd) {
+        Customer customer = timTheoCMND(cmnd);
+        if (customer != null) {
+            customerBankService.remove(customer);
+            System.out.println("✅ Đã xóa khách hàng: " + customer.getHoTen());
+        } else {
+            System.out.println("❌ Không tìm thấy khách hàng!");
+        }
+    }
+    
+    public List<Customer> getAllCustomers() {
+        return customerBankService.getAll();
+    }
+    
+    public void hienThiTatCaKhachHang() {
+        List<Customer> customers = getAllCustomers();
+        if (customers.isEmpty()) {
+            System.out.println("📭 Danh sách khách hàng trống!");
+        } else {
+            System.out.println("\n👥 DANH SÁCH KHÁCH HÀNG (" + customers.size() + " khách hàng)");
+            customers.forEach(System.out::println);
+        }
+    }
+}
+
+// TransactionService
+
+package service;
+
+import model.Transaction;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class TransactionService {
+    private BankService<Transaction> transactionBankService;
+    private int giaoDichCounter;
+    
+    public TransactionService() {
+        this.transactionBankService = new BankService<>();
+        this.giaoDichCounter = 1;
+    }
+    
+    public void themGiaoDich(String maTK, String loaiGD, double soTien, String moTa) {
+        String maGD = String.format("%06d", giaoDichCounter++);
+        Transaction gd = new Transaction(maGD, maTK, loaiGD, soTien, moTa);
+        transactionBankService.add(gd);
+        System.out.println("✅ Đã ghi nhận giao dịch: " + maGD);
+    }
+    
+    public List<Transaction> getLichSuGiaoDich(String maTK) {
+        return transactionBankService.search(gd -> gd.getMaTK().equals(maTK));
+    }
+    
+    public void hienThiLichSuGiaoDich(String maTK) {
+        List<Transaction> lichSu = getLichSuGiaoDich(maTK);
+        if (lichSu.isEmpty()) {
+            System.out.println("📭 Không có giao dịch nào cho tài khoản: " + maTK);
+        } else {
+            System.out.println("\n📋 LỊCH SỬ GIAO DỊCH - TK: " + maTK);
+            lichSu.forEach(System.out::println);
+        }
+    }
+    
+    public List<Transaction> getAllGiaoDich() {
+        return transactionBankService.getAll();
+    }
+}
+
+// FileManager
+
+// Lưu trữ dữ liệu ra file (Text hoặc Binary)
+package utils;
+
+import java.io.*;
+import java.util.List;
+
+public class FileManager {
+    // GHI dữ liệu nhị phân
+    public static <T> boolean luuDuLieu(List<T> data, String filename) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+             new FileOutputStream("data/" + filename))) {
+            oos.writeObject(data);
+            System.out.println("💾 Đã lưu dữ liệu vào: data/" + filename);
+            return true;
+        } catch (IOException e) {
+            System.err.println("❌ Lỗi lưu file: " + e.getMessage());
+            return false;
+        }
+    }
+    // ĐỌC dữ liệu nhị phân  
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> docDuLieu(String filename) {
+        File file = new File("data/" + filename);
+        if (!file.exists()) {
+            System.out.println("📁 File chưa tồn tại: " + filename);
+            return new java.util.ArrayList<>();
+        }
+        
+        try (ObjectInputStream ois = new ObjectInputStream(
+             new FileInputStream("data/" + filename))) {
+            List<T> data = (List<T>) ois.readObject();
+            System.out.println("📖 Đã đọc dữ liệu từ: data/" + filename);
+            return data;
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("❌ Lỗi đọc file: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+    
+    static {
+        // Tạo thư mục data khi class được load
+        new File("data").mkdirs();
+    }
+}
+
+// VNCharacterUtils
+
+package utils;
+
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
+
+public class VNCharacterUtils {
+    
+    public static void setupUTF8() {
+        try {               //Thay thế luồng output mặc định của Java
+            System.setOut(new PrintStream(System.out, true, "UTF-8"));          //Tạo luồng output mới với encoding UTF-8
+            System.setErr(new PrintStream(System.err, true, "UTF-8"));          
+        } catch (UnsupportedEncodingException e) {
+            System.err.println("Không thể thiết lập UTF-8 encoding");
+        }
+    }
+    
+    public static void print(String text) {
+        System.out.println(text);
+    }
+    
+    public static void printNoNewLine(String text) {    //Output: Nhập: _ (con trỏ ở sau)
+
+        System.out.print(text);
+    }
+    
+    public static void printSuccess(String text) {
+        System.out.println("✅ " + text);
+    }
+    
+    public static void printError(String text) {
+        System.out.println("❌ " + text);
+    }
+    
+    public static void printInfo(String text) {
+        System.out.println("ℹ️ " + text);
+    }
+    
+    public static void printWarning(String text) {
+        System.out.println("⚠️ " + text);
+    }
+}
